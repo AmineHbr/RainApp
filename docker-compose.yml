@@ -1,0 +1,55 @@
+version: '3.4'
+
+services:
+  rainappdb:
+    container_name: rainappdb
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    # command: /bin/sh -c /src/entrypoint.sh
+    ports:
+       - 8002:1433
+    environment:
+       - ACCEPT_EULA=Y
+       - SA_PASSWORD=Your_Password123
+    volumes:
+       - ./Rain/database:/src 
+
+  rain:
+    container_name: rain-app
+    image: ${DOCKER_REGISTRY-}rain
+    build:
+      context: .
+      dockerfile: Rain/Dockerfile
+    ports:
+      - 8009:80
+      - 5020:443
+  
+
+  elasticapp:
+    container_name: elastic-app
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.7.1
+    ports:
+      - 9200:9200
+    volumes:
+    - elasticsearch-data:/usr/share/elasticsearch/data
+    environment:
+     - xpack.security.enabled=false
+     - discovery.type=single-node
+ 
+
+  kibana:
+    container_name: kibana
+    image : docker.elastic.co/kibana/kibana:8.7.1
+    ports:
+      - 5601:5601 
+    depends_on :
+      - elasticapp
+    environment :
+      - ELASTICSEARCH_URL=http://localhost:9200
+
+
+networks:
+   elastic:
+     driver: bridge
+
+volumes:
+    elasticsearch-data:    
